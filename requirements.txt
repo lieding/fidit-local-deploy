@@ -8,3 +8,4 @@ numpy==1.23.0
 scikit-image==0.24.0
 huggingface_hub==0.26.5
 onnxruntime==1.20.1
+opencv-python
