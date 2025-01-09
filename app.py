@@ -20,9 +20,9 @@ from huggingface_hub import snapshot_download
 
 example_path = os.path.join(os.path.dirname(__file__), 'examples')
 
-access_token = os.getenv("HUGGING_FACE_HUB_TOKEN")
+access_token = os.getenv("HF_TOKEN")
 fitdit_repo = "BoyuanJiang/FitDiT"
-repo_path = snapshot_download(repo_id=fitdit_repo)
+repo_path = snapshot_download(repo_id=fitdit_repo, use_auth_token=access_token)
 
 class FitDiTGenerator:
     def __init__(self, model_root, device="cuda", with_fp16=False):
