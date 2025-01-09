@@ -290,7 +290,7 @@ def create_demo():
                     ])
             with gr.Column():
                 category = gr.Dropdown(label="Garment category", choices=["Upper-body", "Lower-body", "Dresses"], value="Upper-body")
-                resolution = gr.Dropdown(label="Try-on resolution", choices=["768x1024", "1152x1536", "1536x2048"], value="1152x1536")
+                resolution = gr.Dropdown(label="Try-on resolution", choices=["768x1024", "1152x1536", "1536x2048"], value="768x1024")
             with gr.Column():
                 run_mask_button = gr.Button(value="Step1: Run Mask")
                 run_button = gr.Button(value="Step2: Run Try-on")
