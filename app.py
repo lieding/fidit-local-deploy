@@ -24,6 +24,7 @@ access_token = os.getenv("HF_TOKEN")
 fitdit_repo = "BoyuanJiang/FitDiT"
 repo_path = snapshot_download(repo_id=fitdit_repo, use_auth_token=access_token)
 
+@spaces.GPU
 class FitDiTGenerator:
     def __init__(self, model_root, device="cuda", with_fp16=False):
         weight_dtype = torch.float16 if with_fp16 else torch.bfloat16
@@ -72,7 +73,6 @@ class FitDiTGenerator:
             
             return im, pose_image
 
-    @spaces.GPU
     def process(self, vton_img, garm_img, pre_mask, pose_image, n_steps, image_scale, seed, num_images_per_prompt, resolution):
         assert resolution in ["768x1024", "1152x1536", "1536x2048"]
         new_width, new_height = resolution.split("x")
