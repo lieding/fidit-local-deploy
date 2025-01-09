@@ -41,7 +41,6 @@ class FitDiTGenerator:
         self.dwprocessor = DWposeDetector(model_root=model_root, device=device)
         self.parsing_model = Parsing(model_root=model_root, device=device)
     
-    @spaces.GPU
     def generate_mask(self, vton_img, category, offset_top, offset_bottom, offset_left, offset_right):
         with torch.inference_mode():
             vton_img = Image.open(vton_img)
@@ -306,4 +305,4 @@ if __name__ == "__main__":
     parser.add_argument("--fp16", action="store_true", help="Load model with fp16, default is bf16")
     args = parser.parse_args()
     demo = create_demo(repo_path, args.device, args.fp16)
-    demo.launch(share=True)
+    demo.launch()
