@@ -20,9 +20,8 @@ from huggingface_hub import snapshot_download
 
 example_path = os.path.join(os.path.dirname(__file__), 'examples')
 
-access_token = os.getenv("HF_TOKEN")
 fitdit_repo = "BoyuanJiang/FitDiT"
-repo_path = snapshot_download(repo_id=fitdit_repo, use_auth_token=access_token)
+repo_path = snapshot_download(repo_id=fitdit_repo)
 
 weight_dtype = torch.bfloat16
 device = "cuda"
