@@ -143,19 +143,11 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
             A scheduler to be used in combination with `transformer` to denoise the encoded image latents.
         vae ([`AutoencoderKL`]):
             Variational Auto-Encoder (VAE) Model to encode and decode images to and from latent representations.
-        image_encoder_large ([`CLIPVisionModelWithProjection`]):
-            [CLIP](https://huggingface.co/docs/transformers/model_doc/clip#transformers.CLIPVisionModelWithProjection),
-            specifically the [clip-vit-large-patch14](https://huggingface.co/openai/clip-vit-large-patch14) variant
-        image_encoder_bigG ([`CLIPVisionModelWithProjection`]):
-            [CLIP](https://huggingface.co/docs/transformers/model_doc/clip#transformers.CLIPVisionModelWithProjection),
-            specifically the
-            [laion/CLIP-ViT-bigG-14-laion2B-39B-b160k](https://huggingface.co/laion/CLIP-ViT-bigG-14-laion2B-39B-b160k)
-            variant.
         pose_guider ([`PoseGuider`]):
             Pose encoding network composed of four layers of convolution.
     """
 
-    model_cpu_offload_seq = "image_encoder_large->image_encoder_bigG->pose_guider->transformer_garm->transformer_vton->vae"
+    model_cpu_offload_seq = "pose_guider->transformer_garm->transformer_vton->vae"
     _optional_components = []
     _callback_tensor_inputs = ["latents", "prompt_embeds", "negative_prompt_embeds", "negative_pooled_prompt_embeds"]
 
@@ -166,8 +158,6 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
         transformer_garm: SD3Transformer2DModel,
         transformer_vton: SD3Transformer2DModel,
         pose_guider: PoseGuider,
-        image_encoder_large: CLIPVisionModelWithProjection,
-        image_encoder_bigG: CLIPVisionModelWithProjection,
     ):
         super().__init__()
 
@@ -177,8 +167,6 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
             transformer_vton=transformer_vton,
             scheduler=scheduler,
             pose_guider=pose_guider,
-            image_encoder_large=image_encoder_large,
-            image_encoder_bigG=image_encoder_bigG,
         )
         self.vae_scale_factor = (
             2 ** (len(self.vae.config.block_out_channels) - 1) if hasattr(self, "vae") and self.vae is not None else 8
@@ -574,8 +562,9 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
         return self._interrupt
 
     def _get_clip_image_embeds(self, cloth, num_images_per_prompt, device):
-        image_embeds_large = self.image_encoder_large(cloth).image_embeds
-        image_embeds_bigG = self.image_encoder_bigG(cloth).image_embeds
+        from test_cloth_embedding import test_embedding_bigG, test_embedding_large
+        image_embeds_large = test_embedding_large
+        image_embeds_bigG = test_embedding_bigG@
         return torch.cat([image_embeds_large, image_embeds_bigG], dim=1)
 
     def prepare_image_latents(
@@ -760,6 +749,8 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
                                         pooled_projections=cloth_image_enbeds,
                                         encoder_hidden_states=None,
                                         return_dict=False)
+                    print("ref_key", ref_key)
+                    print("ref_value", ref_value)
                 noise_pred = self.transformer_vton(hidden_states=torch.cat([latent_model_input, vton_model_input, mask_input], dim=1),
                             timestep=timestep,
                             pooled_projections=cloth_image_enbeds,

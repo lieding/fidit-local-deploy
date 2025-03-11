@@ -24,6 +24,9 @@ from diffusers.utils import deprecate, logging
 from diffusers.utils.import_utils import is_torch_npu_available, is_xformers_available
 from diffusers.utils.torch_utils import is_torch_version, maybe_allow_in_graph
 
+from sageattention import sageattn
+F.scaled_dot_product_attention = sageattn
+
 from typing import List
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
