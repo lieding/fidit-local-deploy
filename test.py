@@ -230,7 +230,7 @@ def for_api_call(
     rect_width: int,
     rect_height: int,
     vton_img_base64: str,
-    cloth_img_base64: str,
+    cloth_img: str,
     image_embeds_large: List,
     image_embeds_bigG: List,
     step_nums: int = 20,
@@ -255,9 +255,9 @@ def for_api_call(
         PIL.Image
     """
     mask_array = create_mask_with_borders(img_width, img_height, rect_x, rect_y, rect_width, rect_height)
-    vton_img_base64 = load_image_from_base64(vton_img_base64)
-    cloth_img_base64 = load_image_from_base64(cloth_img_base64)
-    imgs = process(vton_img_base64, cloth_img_base64, image_embeds_large, image_embeds_bigG, mask_array, step_nums, guidance, -1, batch, resolution_str)
+    vton_img = load_image_from_base64(vton_img_base64)
+
+    imgs = process(vton_img, cloth_img, image_embeds_large, image_embeds_bigG, mask_array, step_nums, guidance, -1, batch, resolution_str)
     img = imgs[0]
     image_stream = BytesIO()
     img.save(image_stream, format="WebP")  # Change format if needed (JPEG, PNG, etc.)
