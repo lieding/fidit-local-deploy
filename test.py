@@ -257,7 +257,16 @@ def for_api_call(
     mask_array = create_mask_with_borders(img_width, img_height, rect_x, rect_y, rect_width, rect_height)
     vton_img_base64 = load_image_from_base64(vton_img_base64)
     cloth_img_base64 = load_image_from_base64(cloth_img_base64)
-    process(vton_img_base64, cloth_img_base64, image_embeds_large, image_embeds_bigG, mask_array, step_nums, guidance, -1, batch, resolution_str)
+    imgs = process(vton_img_base64, cloth_img_base64, image_embeds_large, image_embeds_bigG, mask_array, step_nums, guidance, -1, batch, resolution_str)
+    img = imgs[0]
+    image_stream = BytesIO()
+    img.save(image_stream, format="WebP")  # Change format if needed (JPEG, PNG, etc.)
+
+    # Step 2: Encode the binary data to Base64
+    base64_bytes = base64.b64encode(image_stream.getvalue())
+
+    # Step 3: Convert to a UTF-8 string
+    return base64_bytes.decode("utf-8")
 
 
 # if __name__ == "__main__":
