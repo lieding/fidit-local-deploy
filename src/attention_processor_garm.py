@@ -28,9 +28,6 @@ from typing import List
 
 logger = logging.get_logger(__name__)  # pylint: disable=invalid-name
 
-from sageattention import sageattn
-F.scaled_dot_product_attention = sageattn
-
 if is_torch_npu_available():
     import torch_npu
 

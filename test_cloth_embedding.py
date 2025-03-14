@@ -1,6 +1,6 @@
-import torch
 
-test_embedding = {
+
+default_cloth_embedding = {
    "bigG":[
       [
          -1.5048828125,
@@ -2059,5 +2059,3 @@ test_embedding = {
    ]
 }
 
-test_embedding_large = torch.tensor(test_embedding["large"])
-test_embedding_bigG = torch.tensor(test_embedding["bigG"])

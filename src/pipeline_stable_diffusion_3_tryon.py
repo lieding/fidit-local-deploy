@@ -561,10 +561,9 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
     def interrupt(self):
         return self._interrupt
 
-    def _get_clip_image_embeds(self, cloth, num_images_per_prompt, device):
-        from test_cloth_embedding import test_embedding_bigG, test_embedding_large
-        image_embeds_large = test_embedding_large
-        image_embeds_bigG = test_embedding_bigG@
+    def _get_clip_image_embeds(self, image_embeds_large: List, image_embeds_bigG, dtype=torch.float16):
+        image_embeds_large = torch.tensor(image_embeds_large, dtype=dtype)
+        image_embeds_bigG = torch.tensor(image_embeds_bigG, dtype=dtype)
         return torch.cat([image_embeds_large, image_embeds_bigG], dim=1)
 
     def prepare_image_latents(
@@ -595,6 +594,8 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
         callback_on_step_end_tensor_inputs: List[str] = ["latents"],
         cloth_image=None,
         model_image=None,
+        image_embeds_large: List=None,
+        image_embeds_bigG: List=None,
         mask=None,
         pose_image=None
     ):
@@ -683,7 +684,7 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
 
         cloth_image_vit = self.vit_processing(images=cloth_image, return_tensors="pt").data['pixel_values']
         cloth_image_vit = cloth_image_vit.to(device=device)
-        cloth_image_enbeds = self._get_clip_image_embeds(cloth_image_vit, num_images_per_prompt, device)
+        cloth_image_enbeds = self._get_clip_image_embeds(image_embeds_large, image_embeds_bigG)
         cloth_image_enbeds = cloth_image_enbeds.to(device=device)
         cloth_image_enbeds = cloth_image_enbeds.repeat(num_images_per_prompt, *([1] * (cloth_image_enbeds.dim() - 1)))
         
