@@ -750,8 +750,6 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
                                         pooled_projections=cloth_image_enbeds,
                                         encoder_hidden_states=None,
                                         return_dict=False)
-                    print("ref_key", ref_key)
-                    print("ref_value", ref_value)
                 noise_pred = self.transformer_vton(hidden_states=torch.cat([latent_model_input, vton_model_input, mask_input], dim=1),
                             timestep=timestep,
                             pooled_projections=cloth_image_enbeds,
