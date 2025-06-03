@@ -29,7 +29,6 @@ from diffusers.utils import (
 from diffusers.utils.torch_utils import randn_tensor
 from diffusers.pipelines.pipeline_utils import DiffusionPipeline
 from diffusers.pipelines.stable_diffusion_3.pipeline_output import StableDiffusion3PipelineOutput
-from transformers import CLIPImageProcessor
 import torchvision.transforms as transforms
 import torch.nn.functional as F
 from src.pose_guider import PoseGuider
@@ -161,7 +160,6 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
             2 ** (len(self.vae.config.block_out_channels) - 1) if hasattr(self, "vae") and self.vae is not None else 8
         )
         self.image_processor = VaeImageProcessor(vae_scale_factor=self.vae_scale_factor)
-        self.vit_processing = CLIPImageProcessor()
         self.tokenizer_max_length = (
             self.tokenizer.model_max_length if hasattr(self, "tokenizer") and self.tokenizer is not None else 77
         )
@@ -246,11 +244,6 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
     def interrupt(self):
         return self._interrupt
 
-    def _get_clip_image_embeds(self, image_embeds_large: List, image_embeds_bigG, dtype=torch.float16):
-        image_embeds_large = torch.tensor(image_embeds_large, dtype=dtype)
-        image_embeds_bigG = torch.tensor(image_embeds_bigG, dtype=dtype)
-        return torch.cat([image_embeds_large, image_embeds_bigG], dim=1)
-
     def prepare_image_latents(
             self,
             image
@@ -279,8 +272,7 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
         callback_on_step_end_tensor_inputs: List[str] = ["latents"],
         cloth_image=None,
         model_image=None,
-        image_embeds_large: List=None,
-        image_embeds_bigG: List=None,
+        cloth_image_enbeds: List=None,
         mask=None,
         pose_image=None
     ):
@@ -363,9 +355,6 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
         device = self._execution_device
         
 
-        cloth_image_vit = self.vit_processing(images=cloth_image, return_tensors="pt").data['pixel_values']
-        cloth_image_vit = cloth_image_vit.to(device=device)
-        cloth_image_enbeds = self._get_clip_image_embeds(image_embeds_large, image_embeds_bigG)
         cloth_image_enbeds = cloth_image_enbeds.to(device=device)
         cloth_image_enbeds = cloth_image_enbeds.repeat(num_images_per_prompt, *([1] * (cloth_image_enbeds.dim() - 1)))
         

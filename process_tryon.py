@@ -46,7 +46,7 @@ def get_pose_img (vton_img: Image):
 
     return Image.open("3_pose.png")
 
-def process(vton_img: Image, garm_img: Image, image_embeds_large, image_embeds_bigG, pre_mask_array, n_steps, image_scale, seed, num_images_per_prompt, resolution):
+def process(vton_img: Image, garm_img: Image, cloth_image_enbeds, pre_mask_array, n_steps, image_scale, seed, num_images_per_prompt, resolution):
     assert resolution in ["768x1024", "1152x1536", "1536x2048"]
     new_width, new_height = resolution.split("x")
     new_width = int(new_width)
@@ -74,8 +74,7 @@ def process(vton_img: Image, garm_img: Image, image_embeds_large, image_embeds_b
             generator=torch.Generator("cpu").manual_seed(seed),
             cloth_image=garm_img,
             model_image=vton_img,
-            image_embeds_large=image_embeds_large,
-            image_embeds_bigG=image_embeds_bigG,
+            cloth_image_enbeds=cloth_image_enbeds,
             mask=mask,
             pose_image=pose_image,
             num_images_per_prompt=num_images_per_prompt
@@ -214,10 +213,10 @@ def create_mask_with_borders(image_width: int, image_height: int, rect_x: int, r
     return mask
 
 if __name__ == "__main__":
-    category = "Upper-body" # "Upper-body", "Lower-body", "Dresses"
     array = create_mask_with_borders(768, 1024, 250, 160, 280, 260)
-    image_embeds_large=default_cloth_embedding['large']
-    image_embeds_bigG=default_cloth_embedding['bigG']
-    imgs = process(Image.open('examples/model/3.png'), Image.open('examples/garment/cloth.jpg'), image_embeds_large, image_embeds_bigG, array, 30, 2.5, -1, 1, "1152x1536")
+    # image_embeds_large=default_cloth_embedding['large']
+    # image_embeds_bigG=default_cloth_embedding['bigG']
+    cloth_image_enbeds = torch.load("garment_embeds/test.safetensors")
+    imgs = process(Image.open('examples/model/3.png'), Image.open('examples/garment/cloth.jpg'), cloth_image_enbeds, array, 30, 2.5, -1, 1, "1152x1536")
     for i in range(len(imgs)):
         imgs[i].save('../' + str(i) + '.jpg')

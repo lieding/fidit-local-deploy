@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <script src="https://unpkg.com/vue@2"></script>
+  <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+
+<body>
+  <div id="app">
+    <el-upload
+      class="upload-demo"
+      ref="upload"
+      action="https://jsonplaceholder.typicode.com/posts/"
+      :auto-upload="false">
+      <el-button slot="trigger" size="small" type="primary">select garment</el-button>
+      <el-button style="margin-left: 10px;" size="small" type="success" @click="uploadImage" :loading="garmentProcessing">upload to server</el-button>
+      <div class="el-upload__tip" slot="tip">jpg/png files with a size less than 500kb</div>
+    </el-upload>
+    <el-input placeholder="Garment name" v-model="garment_name"></el-input>
+     <template>
+      <el-table
+        :data="garment_sfts"
+        style="width: 100%">
+        <el-table-column prop="sft" label="Name" width="180"></el-table-column>
+        <el-table-column label="Image" width="180">
+          <template slot-scope="scope">
+            <img :src="`/garments/${scope.row.image}`" />
+          </template>
+        </el-table-column>
+      </el-table>
+    </template>
+  </div>
+  <script>
+    async function uploadImage() {
+      const uploader = this.$refs.upload;
+      const file = fileInput.uploadFiles[0];
+      if (!file) return;
+      this.garmentProcessing = true;
+      const filename = (this.garment_name || Date.now()) + '.jpg';
+      const raw = file.raw;
+      raw.name = filename;
+      const formData = new FormData();
+      formData.append('file', raw);
+      try {
+        const response = await fetch('/api/garment', {
+          method: 'POST',
+          body: formData
+        });
+        await response.json();
+      } catch (error) {
+      } finally {
+        this.garmentProcessing = false;
+        tis.getSfts();
+      }
+    }
+
+    async function getSfts() {
+      try {
+        const response = await fetch('/api/garments');
+        const data = await response.json();
+        this.garment_sfts = data;
+      } catch (error) {
+      }
+    }
+    const vm = new Vue({
+      el: '#app',
+      data: {
+        garment_name: '',
+        garmentProcessing: false,
+        garment_sfts: []
+      },
+      mounted () {
+        this.getSfts();
+      },
+      methods: {
+        uploadImage,
+        getSfts,
+      }
+    });
+  
+  </script>
+</body>
+
+</html>
