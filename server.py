@@ -29,7 +29,7 @@ def get_garments():
     """GET接口 - 获取列表"""
     def get_unique_prefixes(directory):
         prefixes = set()
-        pattern = re.compile(r"^(\d+)_\d+\.safetensors$")
+        pattern = re.compile(r"(.*)\.safetensors$")
         for filename in os.listdir(directory):
             match = pattern.match(filename)
             if match:
@@ -76,14 +76,14 @@ def upload_file():
         }), 400
     
     file = request.files['file']
-    
+    filename = request.form.get('filename') or file.filename
     if file.filename == '':
         return jsonify({
             "status": "error",
             "message": "没有选择文件"
         }), 400
-    img_path = app.config['UPLOAD_FOLDER'] + "/" + file.filename
-    embeds_path = app.config['UPLOAD_FOLDER'] + "/" + file.filename.replace(".jpg", ".safetensors")
+    img_path = app.config['UPLOAD_FOLDER'] + "/" + filename
+    embeds_path = app.config['UPLOAD_FOLDER'] + "/" + filename.replace(".jpg", ".safetensors")
     file.save(img_path)
     try:
         result = subprocess.run(

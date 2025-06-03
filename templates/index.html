@@ -9,24 +9,26 @@
 
 <body>
   <div id="app">
-    <el-upload
-      class="upload-demo"
-      ref="upload"
-      action="https://jsonplaceholder.typicode.com/posts/"
-      :auto-upload="false">
-      <el-button slot="trigger" size="small" type="primary">select garment</el-button>
-      <el-button style="margin-left: 10px;" size="small" type="success" @click="uploadImage" :loading="garmentProcessing">upload to server</el-button>
-      <div class="el-upload__tip" slot="tip">jpg/png files with a size less than 500kb</div>
-    </el-upload>
-    <el-input placeholder="Garment name" v-model="garment_name"></el-input>
-     <template>
+    <el-card header="Create new garment">
+      <el-upload
+        class="upload-demo"
+        ref="upload"
+        action="https://jsonplaceholder.typicode.com/posts/"
+        :auto-upload="false">
+        <el-button slot="trigger" size="small" type="primary">select garment</el-button>
+        <el-button style="margin-left: 10px;" size="small" type="success" @click="uploadImage" :loading="garmentProcessing">upload to server</el-button>
+        <div class="el-upload__tip" slot="tip">jpg/png files with a size less than 500kb</div>
+      </el-upload>
+      <el-input placeholder="Garment name" v-model="garment_name"></el-input>
+    </el-card>
+    <template>
       <el-table
         :data="garment_sfts"
         style="width: 100%">
         <el-table-column prop="sft" label="Name" width="180"></el-table-column>
         <el-table-column label="Image" width="180">
           <template slot-scope="scope">
-            <img :src="`/garments/${scope.row.image}`" />
+            <img :src="`/garments/${scope.row.image}`" style="max-height: 64px;" />
           </template>
         </el-table-column>
       </el-table>
@@ -35,14 +37,14 @@
   <script>
     async function uploadImage() {
       const uploader = this.$refs.upload;
-      const file = fileInput.uploadFiles[0];
+      const file = uploader.uploadFiles[0];
       if (!file) return;
       this.garmentProcessing = true;
       const filename = (this.garment_name || Date.now()) + '.jpg';
       const raw = file.raw;
-      raw.name = filename;
       const formData = new FormData();
       formData.append('file', raw);
+      formData.append("filename", filename);
       try {
         const response = await fetch('/api/garment', {
           method: 'POST',
@@ -52,7 +54,7 @@
       } catch (error) {
       } finally {
         this.garmentProcessing = false;
-        tis.getSfts();
+        this.getSfts();
       }
     }
 

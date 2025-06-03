@@ -17,7 +17,7 @@ from src.transformer_sd3_garm import SD3Transformer2DModel as SD3Transformer2DMo
 from src.transformer_sd3_vton import SD3Transformer2DModel as SD3Transformer2DModel_Vton
 
 weight_dtype = torch.bfloat16
-repo_path = ""
+repo_path = os.environ["repo_path"]
 
 pose_guider = PoseGuider(conditioning_embedding_channels=1536, conditioning_channels=3, block_out_channels=(32, 64, 256, 512)) # type: ignore
 pose_guider.load_state_dict(torch.load(os.path.join(repo_path, "pose_guider", "diffusion_pytorch_model.bin")))
@@ -217,6 +217,7 @@ if __name__ == "__main__":
     # image_embeds_large=default_cloth_embedding['large']
     # image_embeds_bigG=default_cloth_embedding['bigG']
     cloth_image_enbeds = torch.load("garment_embeds/test.safetensors")
-    imgs = process(Image.open('examples/model/3.png'), Image.open('examples/garment/cloth.jpg'), cloth_image_enbeds, array, 30, 2.5, -1, 1, "1152x1536")
+    cloth_image = Image.open('garment_embeds/test.jpg')
+    imgs = process(Image.open('examples/model/3.png'), cloth_image, cloth_image_enbeds, array, 30, 2.5, -1, 1, "1152x1536")
     for i in range(len(imgs)):
         imgs[i].save('../' + str(i) + '.jpg')
