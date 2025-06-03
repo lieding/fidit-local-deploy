@@ -17,36 +17,34 @@ from src.transformer_sd3_garm import SD3Transformer2DModel as SD3Transformer2DMo
 from src.transformer_sd3_vton import SD3Transformer2DModel as SD3Transformer2DModel_Vton
 
 weight_dtype = torch.bfloat16
-inference_dtype = torch.qint8
 repo_path = ""
 
 pose_guider = PoseGuider(conditioning_embedding_channels=1536, conditioning_channels=3, block_out_channels=(32, 64, 256, 512)) # type: ignore
 pose_guider.load_state_dict(torch.load(os.path.join(repo_path, "pose_guider", "diffusion_pytorch_model.bin")))
-pose_guider.to(device="cuda", dtype=inference_dtype)
+pose_guider.to(device="cpu", dtype=weight_dtype)
 
 quant_config = DiffusersBitsAndBytesConfig(load_in_8bit=True)
 transformer_garm = SD3Transformer2DModel_Garm.from_pretrained(
     os.path.join(repo_path, "transformer_garm"),
     torch_dtype=weight_dtype,
-    quantization_config=quant_config
-).cpu()
+)
 transformer_vton = SD3Transformer2DModel_Vton.from_pretrained(
     os.path.join(repo_path, "transformer_vton"),
     torch_dtype=weight_dtype,
     quantization_config=quant_config
-).cpu()
+)
 pipeline = StableDiffusion3TryOnPipeline.from_pretrained(
     repo_path,
+    torch_dtype=weight_dtype,
     transformer_garm=transformer_garm,
     transformer_vton=transformer_vton,
     pose_guider=pose_guider)
 pipeline.to("cuda")
-#pipeline.transformer_garm.cpu()
-#pipeline.transformer_vton.cpu()
+pipeline.enable_sequential_cpu_offload()
 
 def get_pose_img (vton_img: Image):
 
-    return resize_image(vton_img)
+    return Image.open("3_pose.png")
 
 def process(vton_img: Image, garm_img: Image, image_embeds_large, image_embeds_bigG, pre_mask_array, n_steps, image_scale, seed, num_images_per_prompt, resolution):
     assert resolution in ["768x1024", "1152x1536", "1536x2048"]
@@ -220,6 +218,6 @@ if __name__ == "__main__":
     array = create_mask_with_borders(768, 1024, 250, 160, 280, 260)
     image_embeds_large=default_cloth_embedding['large']
     image_embeds_bigG=default_cloth_embedding['bigG']
-    imgs = process(Image.open('examples/model/3.png'), Image.open('examples/garment/cloth.jpg'), image_embeds_large, image_embeds_bigG, array, 20, 2, -1, 1, "768x1024")
+    imgs = process(Image.open('examples/model/3.png'), Image.open('examples/garment/cloth.jpg'), image_embeds_large, image_embeds_bigG, array, 30, 2.5, -1, 1, "1152x1536")
     for i in range(len(imgs)):
         imgs[i].save('../' + str(i) + '.jpg')

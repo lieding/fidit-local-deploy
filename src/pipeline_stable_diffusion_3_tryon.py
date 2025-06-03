@@ -215,7 +215,7 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
                 f" size of {batch_size}. Make sure the batch size matches the length of the generators."
             )
 
-        latents = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
+        latents = randn_tensor(shape, generator=generator, device=device, dtype=torch.bfloat16)
 
         return latents
 
@@ -426,15 +426,11 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
                 # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
                 timestep = t.expand(latent_model_input.shape[0])
                 if i==0:
-                    self.transformer_garm.to(device)
                     _, ref_key, ref_value = self.transformer_garm(hidden_states=garm_model_input,
                                         timestep=timestep * 0,
                                         pooled_projections=cloth_image_enbeds,
                                         encoder_hidden_states=None,
                                         return_dict=False)
-                    self.transformer_garm.cpu()
-                    torch.cuda.empty_cache()
-                    self.transformer_vton.to(device)
                 noise_pred = self.transformer_vton(hidden_states=torch.cat([latent_model_input, vton_model_input, mask_input], dim=1),
                             timestep=timestep,
                             pooled_projections=cloth_image_enbeds,
@@ -482,7 +478,7 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
             image = self.vae.decode(latents, return_dict=False)[0]
             image = self.image_processor.postprocess(image, output_type=output_type)
 
-        self.transformer_vton.cpu()
+        #self.transformer_vton.cpu()
         torch.cuda.empty_cache()
         # Offload all models
         self.maybe_free_model_hooks()
