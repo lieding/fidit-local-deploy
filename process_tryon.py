@@ -220,4 +220,4 @@ if __name__ == "__main__":
     cloth_image = Image.open('garment_embeds/test.jpg')
     imgs = process(Image.open('examples/model/3.png'), cloth_image, cloth_image_enbeds, array, 30, 2.5, -1, 1, "1152x1536")
     for i in range(len(imgs)):
-        imgs[i].save('../' + str(i) + '.jpg')
+        imgs[i].save('../result.jpg')
