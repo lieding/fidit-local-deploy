@@ -3,14 +3,13 @@ import base64
 from io import BytesIO
 import random
 import math
+import argparse
 import torch
 import numpy as np
 from PIL import Image
-from diffusers import BitsAndBytesConfig as DiffusersBitsAndBytesConfig
+
 
 from src.pose_guider import PoseGuider
-from test_cloth_embedding import default_cloth_embedding
-
 
 from src.pipeline_stable_diffusion_3_tryon import StableDiffusion3TryOnPipeline
 from src.transformer_sd3_garm import SD3Transformer2DModel as SD3Transformer2DModel_Garm
@@ -19,28 +18,51 @@ from src.transformer_sd3_vton import SD3Transformer2DModel as SD3Transformer2DMo
 weight_dtype = torch.bfloat16
 repo_path = os.environ["repo_path"]
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Simple example of a training script.")
+    parser.add_argument(
+        "--pure_cpu",
+        default=False,
+        help="run in pure cpu mode",
+    )
+    args = parser.parse_args()
+
+    return args
+args = parse_args()
+pure_cpu = args.pure_cpu
 pose_guider = PoseGuider(conditioning_embedding_channels=1536, conditioning_channels=3, block_out_channels=(32, 64, 256, 512)) # type: ignore
 pose_guider.load_state_dict(torch.load(os.path.join(repo_path, "pose_guider", "diffusion_pytorch_model.bin")))
 pose_guider.to(device="cpu", dtype=weight_dtype)
 
-quant_config = DiffusersBitsAndBytesConfig(load_in_8bit=True)
-transformer_garm = SD3Transformer2DModel_Garm.from_pretrained(
-    os.path.join(repo_path, "transformer_garm"),
-    torch_dtype=weight_dtype,
-)
-transformer_vton = SD3Transformer2DModel_Vton.from_pretrained(
-    os.path.join(repo_path, "transformer_vton"),
-    torch_dtype=weight_dtype,
-    quantization_config=quant_config
-)
-pipeline = StableDiffusion3TryOnPipeline.from_pretrained(
-    repo_path,
-    torch_dtype=weight_dtype,
-    transformer_garm=transformer_garm,
-    transformer_vton=transformer_vton,
-    pose_guider=pose_guider)
-pipeline.to("cuda")
-pipeline.enable_sequential_cpu_offload()
+if not pure_cpu:
+    from diffusers import BitsAndBytesConfig as DiffusersBitsAndBytesConfig
+    quant_config = DiffusersBitsAndBytesConfig(load_in_8bit=True)
+    transformer_garm = SD3Transformer2DModel_Garm.from_pretrained(
+        os.path.join(repo_path, "transformer_garm"),
+        torch_dtype=weight_dtype,
+    )
+    transformer_vton = SD3Transformer2DModel_Vton.from_pretrained(
+        os.path.join(repo_path, "transformer_vton"),
+        torch_dtype=weight_dtype,
+        quantization_config=quant_config
+    )
+    pipeline = StableDiffusion3TryOnPipeline.from_pretrained(
+        repo_path,
+        torch_dtype=weight_dtype,
+        transformer_garm=transformer_garm,
+        transformer_vton=transformer_vton,
+        pose_guider=pose_guider)
+    pipeline.to("cuda")
+    pipeline.enable_sequential_cpu_offload()
+else:
+    pipeline = StableDiffusion3TryOnPipeline.from_pretrained(
+        repo_path,
+        torch_dtype=weight_dtype,
+        transformer_garm=None,
+        transformer_vton=None,
+        pose_guider=pose_guider)
+    pipeline.pure_cpu = True
+    pipeline.to("cpu")
 
 def get_pose_img (vton_img: Image):
 

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import inspect
+import os
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import torch
@@ -138,6 +139,8 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
     model_cpu_offload_seq = "pose_guider->transformer_garm->transformer_vton->vae"
     _optional_components = []
     _callback_tensor_inputs = ["latents", "prompt_embeds", "negative_prompt_embeds", "negative_pooled_prompt_embeds"]
+
+    pure_cpu = False
 
     def __init__(
         self,
@@ -367,6 +370,12 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
         self._num_timesteps = len(timesteps)
 
         # 5. Prepare latent variables
+        if self.pure_cpu:
+            from src.transformer_sd3_garm import SD3Transformer2DModel as SD3Transformer2DModel_Garm
+            self.transformer_garm = SD3Transformer2DModel_Garm.from_pretrained(
+                os.path.join(os.environ["repo_path"], "transformer_garm"),
+                torch_dtype=torch.bfloat16,
+            ).cpu()
         num_channels_latents = self.transformer_garm.config.in_channels
         latents = self.prepare_latents(
             batch_size * num_images_per_prompt,
@@ -420,6 +429,13 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
                                         pooled_projections=cloth_image_enbeds,
                                         encoder_hidden_states=None,
                                         return_dict=False)
+                    if self.pure_cpu:
+                        del self.transformer_garm
+                        from src.transformer_sd3_vton import SD3Transformer2DModel as SD3Transformer2DModel_Vton
+                        self.transformer_vton = SD3Transformer2DModel_Vton.from_pretrained(
+                            os.path.join(os.environ["repo_path"], "transformer_vton"),
+                            torch_dtype=torch.bfloat16,
+                        ).cpu()
                 noise_pred = self.transformer_vton(hidden_states=torch.cat([latent_model_input, vton_model_input, mask_input], dim=1),
                             timestep=timestep,
                             pooled_projections=cloth_image_enbeds,
@@ -467,7 +483,8 @@ class StableDiffusion3TryOnPipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromS
             image = self.vae.decode(latents, return_dict=False)[0]
             image = self.image_processor.postprocess(image, output_type=output_type)
 
-        #self.transformer_vton.cpu()
+        if self.pure_cpu:
+            del self.transformer_vton
         torch.cuda.empty_cache()
         # Offload all models
         self.maybe_free_model_hooks()
